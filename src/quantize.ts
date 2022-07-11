@@ -1,3 +1,10 @@
+/**
+ * Basic Javascript port of the MMCQ (modified median cut quantization)
+ * algorithm from the Leptonica library (http://www.leptonica.org/).
+ * Returns a color map you can use to map original pixels to the reduced
+ * palette. Still a work in progress.
+ */
+
 import { CMap } from "./c-map";
 import { PQueue } from "./p-queue";
 import {
