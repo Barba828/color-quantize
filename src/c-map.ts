@@ -58,6 +58,11 @@ export class CMap {
     return this.nearest(color);
   };
 
+  /**
+   * 获取当前颜色近似值
+   * @param color
+   * @returns
+   */
   nearest = (color: number[]) => {
     let i, d1, d2, pColor;
     for (i = 0; i < this.vboxes.size(); i++) {

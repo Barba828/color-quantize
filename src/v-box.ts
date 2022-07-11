@@ -4,8 +4,7 @@ import { getColorIndex, Histo, rshift, sigbits } from "./utils";
  * rgb三维色彩空间 Box
  */
 export class VBox {
-  private _count_set: boolean;
-  private _count: number;
+  private _count: number = -1;
   private _volume: number;
   private _avg: number[];
 
@@ -20,7 +19,7 @@ export class VBox {
   ) {}
 
   /**
-   * 像素空间相对值
+   * 色彩空间相对值
    * @param force
    * @returns
    */
@@ -41,26 +40,11 @@ export class VBox {
    * @returns
    */
   count = (force?: boolean) => {
-    if (this._count_set && !force) {
+    if (this._count > -1 && !force) {
       return this._count;
     }
 
-    let npix = 0;
-    let i, j, k, index;
-
-    // 根据 rgb 色彩空间遍历 histo
-    // TODO 这里为啥不直接遍历 histo
-    for (i = this.r1; i <= this.r2; i++) {
-      for (j = this.g1; j <= this.g2; j++) {
-        for (k = this.b1; k <= this.b2; k++) {
-          index = getColorIndex(i, j, k);
-          npix += this.histo[index] || 0;
-        }
-      }
-    }
-
-    this._count = npix;
-    this._count_set = true;
+    this._count = this.histo.reduce((p, t) => p + (t || 0), 0);
     return this._count;
   };
 
@@ -76,12 +60,17 @@ export class VBox {
     );
   };
 
+  /**
+   * 色彩空间平均颜色
+   * @param force
+   * @returns
+   */
   avg = (force?: boolean) => {
     if (this._avg && force) {
       return this._avg;
     }
     let ntot = 0,
-      mult = 1 << (8 - sigbits),
+      mult = 1 << rshift,
       rsum = 0,
       gsum = 0,
       bsum = 0,
@@ -115,10 +104,13 @@ export class VBox {
     return this._avg;
   };
 
+  /**
+   * 像素是否在vbox色彩空间内
+   * @param pixel
+   * @returns
+   */
   contains = (pixel: number[]) => {
-    const rval = pixel[0] >> rshift;
-    const gval = pixel[1] >> rshift;
-    const bval = pixel[2] >> rshift;
+    const [rval, gval, bval] = pixel.map((num) => num >> rshift);
     return (
       rval >= this.r1 &&
       rval <= this.r2 &&

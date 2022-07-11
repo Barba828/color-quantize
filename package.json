@@ -10,19 +10,18 @@
     "color",
     "node"
   ],
-  "license": {
-    "type": "MIT",
-    "url": "http://github.com/olivierlesnicki/quantize/raw/master/LICENSE"
-  },
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git://github.com/Barba828/color-quantize"
   },
-  "main": "index.d.ts",
+  "main": "dist/index.js",
+  "types": "index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx rollup -c rollup.config.js",
-    "dev": "yarn build && node ./dist/bundle.js"
+    "dev": "yarn build && node ./dist/bundle.js",
+    "deploy": "yarn build && npm publish"
   },
   "dependencies": {},
   "devDependencies": {

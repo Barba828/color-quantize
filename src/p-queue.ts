@@ -1,5 +1,8 @@
 type Comparator<T> = (a: T, b: T) => number;
 
+/**
+ * 优先队列
+ */
 export class PQueue<T> extends Array<T> {
   _sorted: boolean = false;
 
