@@ -1,0 +1,97 @@
+import { PQueue } from "./p-queue";
+import { Pixel, pv } from "./utils";
+import { VBox } from "./v-box";
+
+type VBoxItem = {
+  vbox: VBox;
+  color: Pixel;
+};
+
+export class CMap {
+  vboxes: PQueue<VBoxItem>;
+
+  constructor() {
+    this.vboxes = new PQueue<VBoxItem>((a, b) => {
+      return pv.naturalOrder(
+        a.vbox.count() * a.vbox.volume(),
+        b.vbox.count() * b.vbox.volume()
+      );
+    });
+  }
+
+  push = (vbox: VBox) => {
+    this.vboxes.push({
+      vbox: vbox,
+      color: vbox.avg(), // 根据色彩空间平均色取 近似色
+    });
+  };
+
+  /**
+   * 获取所有色彩空间颜色
+   * @returns
+   */
+  palette = () => {
+    return this.vboxes.map((vb) => vb.color);
+  };
+
+  /**
+   * 色彩空间size
+   * @returns
+   */
+  size = () => {
+    return this.vboxes.size();
+  };
+
+  /**
+   * 匹配当前色彩空间近似值
+   * @param color
+   * @returns
+   */
+  map = (color: number[]) => {
+    // 当前有色彩空间 包括匹配值
+    for (let i = 0; i < this.vboxes.size(); i++) {
+      if (this.vboxes.peek(i).vbox.contains(color)) {
+        return this.vboxes.peek(i).color;
+      }
+    }
+    // 无匹配，取近似值
+    return this.nearest(color);
+  };
+
+  nearest = (color: number[]) => {
+    let i, d1, d2, pColor;
+    for (i = 0; i < this.vboxes.size(); i++) {
+      d2 = Math.sqrt(
+        Math.pow(color[0] - this.vboxes.peek(i).color[0], 2) +
+          Math.pow(color[1] - this.vboxes.peek(i).color[1], 2) +
+          Math.pow(color[2] - this.vboxes.peek(i).color[2], 2)
+      );
+      if (d2 < d1 || d1 === undefined) {
+        d1 = d2;
+        pColor = this.vboxes.peek(i).color;
+      }
+    }
+    return pColor;
+  };
+
+  /**
+   * 当色彩空间接近极值时，直接取纯黑白色
+   */
+  forcebw = () => {
+    // XXX: won't  work yet
+    this.vboxes.sort((a: VBoxItem, b: VBoxItem) => {
+      return pv.naturalOrder(pv.sum(a.color), pv.sum(b.color));
+    });
+
+    // force darkest color to black if everything < 5
+    const lowest = this.vboxes[0].color;
+    if (lowest[0] < 5 && lowest[1] < 5 && lowest[2] < 5)
+      this.vboxes[0].color = [0, 0, 0];
+
+    // force lightest color to white if everything > 251
+    const idx = this.vboxes.length - 1,
+      highest = this.vboxes[idx].color;
+    if (highest[0] > 251 && highest[1] > 251 && highest[2] > 251)
+      this.vboxes[idx].color = [255, 255, 255];
+  };
+}

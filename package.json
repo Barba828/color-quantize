@@ -1,0 +1,21 @@
+{
+  "name": "color-quantize",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx rollup -c rollup.config.js",
+    "dev": "yarn build && node ./dist/bundle.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^8.3.3",
+    "rollup": "^2.76.0",
+    "rollup-plugin-dts": "^4.2.2",
+    "tslib": "^2.4.0",
+    "typescript": "^4.7.4"
+  }
+}
