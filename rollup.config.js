@@ -13,7 +13,7 @@ export default [
       !isDev && terser(), // terser 压缩（prod模式下）
     ],
     output: {
-      file: "dist/bundle.js",
+      file: "dist/index.js",
       format: "esm",
     },
   },
