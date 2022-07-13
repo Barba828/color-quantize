@@ -1,6 +1,6 @@
 {
   "name": "ts-color-quantize",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A js module for color quantization, based on Leptonica.",
   "homepage": "https://github.com/Barba828/color-quantize",
   "author": "Barba828 (https://github.com/Barba828)",
