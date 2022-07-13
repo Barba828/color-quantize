@@ -19,25 +19,28 @@ import {
 import { VBox } from "./v-box";
 
 export const quantize = (pixels: Pixel[], maxcolors: number) => {
-  if (!pixels.length || maxcolors < 2 || maxcolors > 256) {
+  if (!pixels.length || maxcolors < 1 || maxcolors > 256) {
     return new CMap();
   }
 
+  // 将 RGB 三维色彩数组 转为 histo 一维数组（会做一定压缩处理）
   const histo = getHisto(pixels);
 
+  // 一维数组中有效色彩空间数
   const nColors = pv.size(histo);
   if (nColors <= maxcolors) {
-    // XXX: generate the new colors from the histo and return
-  }
+  } // 将会从 histo 中生成新的颜色
 
-  // get the beginning vbox from the colors
+  // 根据原 rgb 像素数组获取色彩空间 vbox（r, g, b三色的范围）
   const vbox = vboxFromPixels(pixels, histo);
+  // vbox 优先队列，以属于该 vbox 的像素数量 count 排序
   const pq = new PQueue<VBox>((a, b) => {
     return pv.naturalOrder(a.count(), b.count());
   });
   pq.push(vbox);
 
-  // inner function to do the iteration
+  // 将 vbox 队列扩展到 target 目标长度
+  // 因为是优先队列，所以每一次都拆分 pop 的第一个（即像素数最多的一个）vbox
   const iter = (vboxQueue: PQueue<VBox>, target: number) => {
     let vboxSize = vboxQueue.size(),
       tempIterations = 0,
@@ -75,25 +78,21 @@ export const quantize = (pixels: Pixel[], maxcolors: number) => {
     }
   };
 
-  // first set of colors, sorted by population
+  // 第一次分割 vboxes ，按照像素量进行粗分
   iter(pq, fractByPopulations * maxcolors);
 
-  // Re-sort by the product of pixel occupancy times the size in color space.
-  const pq2 = new PQueue<VBox>((a, b) => {
+  // 按像素占用乘以颜色空间大小的乘积重新排序
+  pq.sort((a, b) => {
     return pv.naturalOrder(a.count() * a.volume(), b.count() * b.volume());
   });
 
-  while (pq.size()) {
-    pq2.push(pq.pop());
-  }
+  // 第二次分割，使用 (npix * vol) 排序生成中位数切割.
+  iter(pq, maxcolors);
 
-  // next set - generate the median cuts using the (npix * vol) sorting.
-  iter(pq2, maxcolors);
-
-  // calculate the actual colors
+  // 遍历 pq，更新 vbox 中 avg color
   const cmap = new CMap();
-  while (pq2.size()) {
-    cmap.push(pq2.pop());
+  while (pq.size()) {
+    cmap.push(pq.pop());
   }
 
   return cmap;

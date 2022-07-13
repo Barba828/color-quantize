@@ -7,14 +7,15 @@ export class PQueue<T> extends Array<T> {
   _sorted: boolean = false;
 
   constructor(
-    protected comparator: Comparator<T> = (a, b) => Number(a) - Number(b)
+    protected _comparator: Comparator<T> = (a, b) => Number(a) - Number(b)
   ) {
     super();
   }
 
   sort = (comparator?: Comparator<T>) => {
+    this._comparator = comparator ? comparator : this._comparator;
     this._sorted = true;
-    return super.sort(comparator || this.comparator);
+    return super.sort(this._comparator);
   };
 
   push = (o: T) => {
