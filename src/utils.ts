@@ -1,4 +1,4 @@
-import { VBox } from "./v-box";
+import { VBox, VBoxRangeKey } from "./v-box";
 
 export type Pixel = number[]; // [red ,green, blue] 像素数组
 export type Histo = number[]; // 记录像素数量数组（下标根据 rgb 数值运算得）
@@ -14,11 +14,11 @@ export const pv = {
   },
   sum: <T>(array: T[], f?: (t: T) => number) => {
     return array.reduce((p, t) => {
-      return p + (f ? f.call(array, t) : t);
+      return p + (f ? f.call(array, t) : Number(t));
     }, 0);
   },
   max: <T>(array: T[], f?: (d: T) => number) => {
-    return Math.max.apply(null, f ? array.map(f) : array);
+    return Math.max.apply(null, f ? array.map(f) : array.map((d) => Number(d)));
   },
   size: <T>(array: T[]) => {
     return array.reduce((p, t) => (t ? p + 1 : p), 0);
@@ -93,7 +93,7 @@ export const medianCutApply = (histo: Histo, vbox: VBox): VBox[] => {
   // no pixel, return
   if (!vbox.count()) return [];
   // only one pixel, no split
-  if (vbox.count() == 1) {
+  if (vbox.count() === 1) {
     return [vbox.copy()];
   }
 
@@ -157,8 +157,8 @@ export const medianCutApply = (histo: Histo, vbox: VBox): VBox[] => {
    * @returns
    */
   const doCut = (color: "r" | "g" | "b") => {
-    let dim1 = color + "1",
-      dim2 = color + "2",
+    let dim1 = (color + "1") as VBoxRangeKey,
+      dim2 = (color + "2") as VBoxRangeKey,
       i = vbox[dim1],
       left,
       right,
@@ -186,7 +186,6 @@ export const medianCutApply = (histo: Histo, vbox: VBox): VBox[] => {
       // set dimensions
       vbox1[dim2] = cutIndex;
       vbox2[dim1] = cutIndex + 1;
-      // console.log('vbox counts:', vbox.count(), vbox1.count(), vbox2.count());
       return [vbox1, vbox2];
     }
     return [];

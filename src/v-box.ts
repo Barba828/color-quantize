@@ -1,5 +1,6 @@
-import { getColorIndex, Histo, rshift, sigbits } from "./utils";
+import { getColorIndex, Histo, Pixel, rshift } from "./utils";
 
+export type VBoxRangeKey = "r1" | "r2" | "g1" | "g2" | "b1" | "b2";
 /**
  * rgb三维色彩空间 Box
  * 以 r,g,b 三色的取色范围定义 vbox 色彩空间大小
@@ -7,8 +8,8 @@ import { getColorIndex, Histo, rshift, sigbits } from "./utils";
  */
 export class VBox {
   private _count: number = -1;
-  private _volume: number;
-  private _avg: number[];
+  private _volume: number = 0;
+  private _avg: Pixel = [];
 
   constructor(
     public r1: number, // min red
@@ -68,7 +69,7 @@ export class VBox {
    * @returns
    */
   avg = (force?: boolean) => {
-    if (this._avg && force) {
+    if (this._avg.length && force) {
       return this._avg;
     }
     let ntot = 0,

@@ -78,7 +78,7 @@ export class CMap {
           Math.pow(color[1] - this.vboxes.peek(i).color[1], 2) +
           Math.pow(color[2] - this.vboxes.peek(i).color[2], 2)
       );
-      if (d2 < d1 || d1 === undefined) {
+      if (d1 === undefined || d2 < d1) {
         d1 = d2;
         pColor = this.vboxes.peek(i).color;
       }
