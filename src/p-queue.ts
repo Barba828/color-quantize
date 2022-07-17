@@ -2,6 +2,7 @@ type Comparator<T> = (a: T, b: T) => number;
 
 /**
  * 优先队列
+ * 可以固定设置排序 Callback 方法
  */
 export class PQueue<T> extends Array<T> {
   _sorted: boolean = false;

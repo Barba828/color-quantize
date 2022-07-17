@@ -21,7 +21,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "NODE_ENV=production npx rollup -c rollup.config.js",
     "build:dev": "npx rollup -c rollup.config.js",
-    "dev": "yarn build:dev && node ./dist/bundle.js",
+    "dev": "yarn build:dev && node ./dist/index.js",
     "deploy": "yarn build && npm publish"
   },
   "dependencies": {},

@@ -2,6 +2,8 @@ import { getColorIndex, Histo, rshift, sigbits } from "./utils";
 
 /**
  * rgb三维色彩空间 Box
+ * 以 r,g,b 三色的取色范围定义 vbox 色彩空间大小
+ * 即 x,y,z 三轴的上下限定义 空间大小
  */
 export class VBox {
   private _count: number = -1;
@@ -19,8 +21,8 @@ export class VBox {
   ) {}
 
   /**
-   * 色彩空间相对值
-   * @param force
+   * 色彩空间体积（即 r,g,b 三维长方体体积）
+   * @param force 强制重算
    * @returns
    */
   volume = (force?: boolean) => {
@@ -35,8 +37,8 @@ export class VBox {
   };
 
   /**
-   * 获取 histo 的像素数
-   * @param force
+   * 获取 histo 的总像素数（ histo可能有数个 vbox ）
+   * @param force 强制重算
    * @returns
    */
   count = (force?: boolean) => {
@@ -44,7 +46,7 @@ export class VBox {
       return this._count;
     }
 
-    this._count = this.histo.reduce((p, t) => p + (t || 0), 0);
+    this._count = this.histo.reduce((pre, tmp) => pre + (tmp || 0), 0);
     return this._count;
   };
 
@@ -94,7 +96,7 @@ export class VBox {
     if (ntot) {
       this._avg = [~~(rsum / ntot), ~~(gsum / ntot), ~~(bsum / ntot)];
     } else {
-      //console.log('empty box');
+      // empty box
       this._avg = [
         ~~((mult * (this.r1 + this.r2 + 1)) / 2),
         ~~((mult * (this.g1 + this.g2 + 1)) / 2),

@@ -1,6 +1,7 @@
 declare type Comparator<T> = (a: T, b: T) => number;
 /**
  * 优先队列
+ * 可以固定设置排序 Callback 方法
  */
 declare class PQueue<T> extends Array<T> {
     protected _comparator: Comparator<T>;
@@ -16,6 +17,8 @@ declare class PQueue<T> extends Array<T> {
 
 /**
  * rgb三维色彩空间 Box
+ * 以 r,g,b 三色的取色范围定义 vbox 色彩空间大小
+ * 即 x,y,z 三轴的上下限定义 空间大小
  */
 declare class VBox {
     r1: number;
@@ -32,14 +35,14 @@ declare class VBox {
     r2: number, // max red
     g1: number, g2: number, b1: number, b2: number, histo: Histo);
     /**
-     * 色彩空间相对值
-     * @param force
+     * 色彩空间体积（即 r,g,b 三维长方体体积）
+     * @param force 强制重算
      * @returns
      */
     volume: (force?: boolean) => number;
     /**
-     * 获取 histo 的像素数
-     * @param force
+     * 获取 histo 的总像素数（ histo可能有数个 vbox ）
+     * @param force 强制重算
      * @returns
      */
     count: (force?: boolean) => number;
@@ -66,6 +69,13 @@ declare type VBoxItem = {
     color: Pixel;
 };
 declare class CMap {
+    /**
+     * 色彩空间 默认比较函数
+     */
+    static _compare: (a: VBoxItem, b: VBoxItem) => 1 | -1 | 0;
+    /**
+     * 色彩空间队列，以 CMap._compare 排序
+     */
     vboxes: PQueue<VBoxItem>;
     constructor();
     push: (vbox: VBox) => void;
@@ -84,13 +94,13 @@ declare class CMap {
      * @param color
      * @returns
      */
-    map: (color: number[]) => any;
+    map: (color: Pixel) => any;
     /**
      * 获取当前颜色近似值
      * @param color
      * @returns
      */
-    nearest: (color: number[]) => any;
+    nearest: (color: Pixel) => any;
     /**
      * 当色彩空间接近极值时，直接取纯黑白色
      */

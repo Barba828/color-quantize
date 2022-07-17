@@ -8,15 +8,22 @@ type VBoxItem = {
 };
 
 export class CMap {
+  /**
+   * 色彩空间 默认比较函数
+   */
+  static _compare = (a: VBoxItem, b: VBoxItem) => {
+    return pv.naturalOrder(
+      a.vbox.count() * a.vbox.volume(),
+      b.vbox.count() * b.vbox.volume()
+    );
+  };
+  /**
+   * 色彩空间队列，以 CMap._compare 排序
+   */
   vboxes: PQueue<VBoxItem>;
 
   constructor() {
-    this.vboxes = new PQueue<VBoxItem>((a, b) => {
-      return pv.naturalOrder(
-        a.vbox.count() * a.vbox.volume(),
-        b.vbox.count() * b.vbox.volume()
-      );
-    });
+    this.vboxes = new PQueue<VBoxItem>(CMap._compare);
   }
 
   push = (vbox: VBox) => {
@@ -47,7 +54,7 @@ export class CMap {
    * @param color
    * @returns
    */
-  map = (color: number[]) => {
+  map = (color: Pixel) => {
     // 当前有色彩空间 包括匹配值
     for (let i = 0; i < this.vboxes.size(); i++) {
       if (this.vboxes.peek(i).vbox.contains(color)) {
@@ -63,7 +70,7 @@ export class CMap {
    * @param color
    * @returns
    */
-  nearest = (color: number[]) => {
+  nearest = (color: Pixel) => {
     let i, d1, d2, pColor;
     for (i = 0; i < this.vboxes.size(); i++) {
       d2 = Math.sqrt(
@@ -83,7 +90,7 @@ export class CMap {
    * 当色彩空间接近极值时，直接取纯黑白色
    */
   forcebw = () => {
-    // XXX: won't  work yet
+    // 以 rgb 三色空间绝对值排序
     this.vboxes.sort((a: VBoxItem, b: VBoxItem) => {
       return pv.naturalOrder(pv.sum(a.color), pv.sum(b.color));
     });
@@ -98,5 +105,7 @@ export class CMap {
       highest = this.vboxes[idx].color;
     if (highest[0] > 251 && highest[1] > 251 && highest[2] > 251)
       this.vboxes[idx].color = [255, 255, 255];
+
+    this.vboxes.sort(CMap._compare);
   };
 }
