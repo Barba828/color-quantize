@@ -27,6 +27,7 @@ export const pv = {
 
 /**
  * 获取[reg, green, blue]颜色空间像素对应的 histo 下标
+ * histo[00000 00000 00000]
  * @returns index
  */
 export const getColorIndex = (r: number, g: number, b: number) => {
@@ -37,11 +38,10 @@ export const getColorIndex = (r: number, g: number, b: number) => {
  * 通过数组 [reg, green, blue] 获取该像素在 histo 下标
  * histo每个元素保存 对应颜色空间像素 的数量
  * @param pixels
- * @returns histo 一维数组，给出颜色空间每个量化区域的像素数
+ * @returns histo
  */
 export const getHisto = (pixels: Pixel[]): Histo => {
-  let histosize = 1 << (3 * sigbits),
-    histo = new Array<number>(histosize), // 一维空间数组
+  let histo = new Array<number>(1 << (3 * sigbits)), // 一维空间数组
     index,
     rval,
     gval,
@@ -55,24 +55,36 @@ export const getHisto = (pixels: Pixel[]): Histo => {
 };
 
 /**
- * 根据像素信息分别获取 rgb 的最值，并生成 VBox
+ * 根据像素信息 [reg, green, blue][] 分别获取 rgb 的最值，以及该像素数量
  * @param pixels
- * @param histo
  * @returns
+ * {
+ *  histo: 一维数组，给出颜色空间每个量化区域的像素数
+ *  vbox: 色彩空间体
+ * }
  */
-export const vboxFromPixels = (pixels: Pixel[], histo: Histo) => {
-  let rmin = 1000000,
+export const getHistoAndVBox = (pixels: Pixel[]) => {
+  // 一维色彩范围数组
+  let histo = new Array<number>(1 << (3 * sigbits)),
+    index,
+    // 色彩空间范围
+    rmin = Infinity,
     rmax = 0,
-    gmin = 1000000,
+    gmin = Infinity,
     gmax = 0,
-    bmin = 1000000,
+    bmin = Infinity,
     bmax = 0,
+    // r,g,b压缩值
     rval,
     gval,
     bval;
-  // find min/max, 根据最值生成符合该色彩空间的 vbox
+  // 更新 histo && find min/max, 根据最值生成符合该色彩空间的 vbox
   pixels.forEach(function (pixel) {
     [rval, gval, bval] = pixel.map((num) => num >> rshift);
+
+    index = getColorIndex(rval, gval, bval); // 获取该颜色空间像素对应的 histo 下标
+    histo[index] = (histo[index] || 0) + 1;
+
     if (rval < rmin) rmin = rval;
     else if (rval > rmax) rmax = rval;
     if (gval < gmin) gmin = gval;
@@ -80,11 +92,17 @@ export const vboxFromPixels = (pixels: Pixel[], histo: Histo) => {
     if (bval < bmin) bmin = bval;
     else if (bval > bmax) bmax = bval;
   });
-  return new VBox(rmin, rmax, gmin, gmax, bmin, bmax, histo);
+  return {
+    vbox: new VBox(rmin, rmax, gmin, gmax, bmin, bmax, histo),
+    histo,
+  };
 };
 
 /**
- * 根据 histo 中位数，切分色彩空间 vbox
+ * 根据最长边切分色彩空间长方体 vbox
+ * 1. 找到 vbox 最长边 l
+ * 2. 找到 l 边上中位数下标
+ * 3. 根据中位数切分空间密度较大的 vbox
  * @param histo
  * @param vbox
  * @returns
@@ -100,7 +118,7 @@ export const medianCutApply = (histo: Histo, vbox: VBox): VBox[] => {
   const rw = vbox.r2 - vbox.r1 + 1,
     gw = vbox.g2 - vbox.g1 + 1,
     bw = vbox.b2 - vbox.b1 + 1,
-    maxw = pv.max([rw, gw, bw]), // 最长色彩空间跨度
+    maxw = pv.max([rw, gw, bw]), // 最长色彩空间跨度，即 vbox 长方体中最长边
     partialsum: number[] = [];
 
   let total = 0, // 像素总数量
@@ -137,7 +155,6 @@ export const medianCutApply = (histo: Histo, vbox: VBox): VBox[] => {
     }
   } else {
     for (i = vbox.b1; i <= vbox.b2; i++) {
-      // 获取 red = i 时，所有的像素数量
       sum = 0;
       for (j = vbox.r1; j <= vbox.r2; j++) {
         for (k = vbox.g1; k <= vbox.g2; k++) {
@@ -145,7 +162,6 @@ export const medianCutApply = (histo: Histo, vbox: VBox): VBox[] => {
           sum += histo[index] || 0;
         }
       }
-      // red <= i时，累计像素总数
       total += sum;
       partialsum[i] = total;
     }
@@ -157,39 +173,35 @@ export const medianCutApply = (histo: Histo, vbox: VBox): VBox[] => {
    * @returns
    */
   const doCut = (color: "r" | "g" | "b") => {
-    let dim1 = (color + "1") as VBoxRangeKey,
-      dim2 = (color + "2") as VBoxRangeKey,
-      i = vbox[dim1],
-      left,
-      right,
-      vbox1,
-      vbox2,
-      cutIndex;
+    const dim1 = (color + "1") as VBoxRangeKey;
+    const dim2 = (color + "2") as VBoxRangeKey;
+    let left, right, vbox1, vbox2, cutIndex;
 
-    while (i <= vbox[dim2]) {
-      // 获取中位数下标 i
-      if (partialsum[i] < total / 2) {
-        i++;
-        continue;
+    for (i = vbox[dim1]; i <= vbox[dim2]; i++) {
+      if (partialsum[i] >= total / 2) {
+        break;
       }
-
-      vbox1 = vbox.copy();
-      vbox2 = vbox.copy();
-      // 中位数下标与两个最值的距离
-      left = i - vbox[dim1];
-      right = vbox[dim2] - i;
-      // 获取切分点
-      if (left <= right) cutIndex = Math.min(vbox[dim2] - 1, ~~(i + right / 2));
-      else cutIndex = Math.max(vbox[dim1], ~~(i - 1 - left / 2));
-      // avoid 0-count boxes
-      while (!partialsum[cutIndex]) cutIndex++;
-      // set dimensions
-      vbox1[dim2] = cutIndex;
-      vbox2[dim1] = cutIndex + 1;
-      return [vbox1, vbox2];
     }
-    return [];
+
+    vbox1 = vbox.copy();
+    vbox2 = vbox.copy();
+    // 中位数下标与该轴上下限下标的距离，距离越短即空间密度越大
+    left = i - vbox[dim1];
+    right = vbox[dim2] - i;
+    // 获取切分点
+    cutIndex =
+      left <= right
+        ? Math.min(vbox[dim2] - 1, ~~(i + right / 2))
+        : Math.max(vbox[dim1], ~~(i - 1 - left / 2));
+    // avoid 0-count boxes
+    while (!partialsum[cutIndex] && cutIndex <= vbox[dim2]) cutIndex++;
+    // set dimensions
+    vbox1[dim2] = cutIndex;
+    vbox2[dim1] = cutIndex + 1;
+
+    return [vbox1, vbox2];
   };
+
   // determine the cut planes
   return maxw === rw ? doCut("r") : maxw === gw ? doCut("g") : doCut("b");
 };

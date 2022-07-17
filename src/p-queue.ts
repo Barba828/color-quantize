@@ -29,6 +29,11 @@ export class PQueue<T> extends Array<T> {
     return super.pop() as T;
   };
 
+  /**
+   * 获取下标元素(默认获取最后一位元素)
+   * @param index
+   * @returns
+   */
   peek = (index?: number) => {
     if (!this._sorted) this.sort();
     if (index === undefined) index = this.length - 1;

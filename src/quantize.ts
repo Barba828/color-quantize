@@ -9,12 +9,11 @@ import { CMap } from "./c-map";
 import { PQueue } from "./p-queue";
 import {
   fractByPopulations,
-  getHisto,
+  getHistoAndVBox,
   maxIterations,
   medianCutApply,
   Pixel,
   pv,
-  vboxFromPixels,
 } from "./utils";
 import { VBox } from "./v-box";
 
@@ -24,15 +23,9 @@ export const quantize = (pixels: Pixel[], maxcolors: number) => {
   }
 
   // 将 RGB 三维色彩数组 转为 histo 一维数组（会做一定压缩处理）
-  const histo = getHisto(pixels);
-
-  // 一维数组中有效色彩空间数
-  const nColors = pv.size(histo);
-  if (nColors <= maxcolors) {
-  } // 将会从 histo 中生成新的颜色
-
   // 根据原 rgb 像素数组获取色彩空间 vbox（r, g, b三色的范围）
-  const vbox = vboxFromPixels(pixels, histo);
+  const { histo, vbox } = getHistoAndVBox(pixels);
+
   // vbox 优先队列，以属于该 vbox 的像素数量 count 排序
   const pq = new PQueue<VBox>((a, b) => {
     return pv.naturalOrder(a.count(), b.count());
@@ -50,16 +43,9 @@ export const quantize = (pixels: Pixel[], maxcolors: number) => {
       // 满足数量需求
       if (vboxSize >= target) return;
       // 遍历次数过多
-      if (tempIterations++ > maxIterations) {
-        // console.log("infinite loop; perhaps too few pixels!");
-        return;
-      }
-
-      if (!vboxQueue.peek().count()) {
-        /* just put it back */
-        tempIterations++;
-        continue;
-      }
+      if (tempIterations++ > maxIterations) return;
+      // 队列顶部 vbox 无像素
+      if (!vboxQueue.peek().count()) return;
 
       vbox = vboxQueue.pop();
       // do the cut
@@ -78,15 +64,15 @@ export const quantize = (pixels: Pixel[], maxcolors: number) => {
     }
   };
 
-  // 第一次分割 vboxes ，按照像素量进行粗分
+  // 第一次分割 vboxes ，按照（像素量）进行粗分
   iter(pq, fractByPopulations * maxcolors);
 
-  // 按像素占用乘以颜色空间大小的乘积重新排序
+  // 按(像素量 * 色彩空间体积)重新排序
   pq.sort((a, b) => {
     return pv.naturalOrder(a.count() * a.volume(), b.count() * b.volume());
   });
 
-  // 第二次分割，使用 (npix * vol) 排序生成中位数切割.
+  // 第二次分割，使用 (像素量 * 色彩空间体积) 排序生成中位数切割.
   iter(pq, maxcolors);
 
   // 遍历 pq，更新 vbox 中 avg color

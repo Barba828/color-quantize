@@ -1,10 +1,11 @@
-import { getColorIndex, Histo, Pixel, rshift } from "./utils";
+import { getColorIndex, Histo, Pixel, rshift, sigbits } from "./utils";
 
 export type VBoxRangeKey = "r1" | "r2" | "g1" | "g2" | "b1" | "b2";
 /**
- * rgb三维色彩空间 Box
- * 以 r,g,b 三色的取色范围定义 vbox 色彩空间大小
+ * rgb三维色彩空间 VBox
+ * 以 r,g,b 三色的取色范围(5位)定义 vbox 色彩空间大小
  * 即 x,y,z 三轴的上下限定义 空间大小
+ * hitso 一维数组保存像素记录(长度 5*5*5)
  */
 export class VBox {
   private _count: number = -1;
@@ -38,7 +39,7 @@ export class VBox {
   };
 
   /**
-   * 获取 histo 的总像素数（ histo可能有数个 vbox ）
+   * 获取 vbox 内的总像素数
    * @param force 强制重算
    * @returns
    */
@@ -47,7 +48,20 @@ export class VBox {
       return this._count;
     }
 
-    this._count = this.histo.reduce((pre, tmp) => pre + (tmp || 0), 0);
+    let count = 0,
+      i,
+      j,
+      k,
+      index;
+    for (i = this.r1; i <= this.r2; i++) {
+      for (j = this.g1; j <= this.g2; j++) {
+        for (k = this.b1; k <= this.b2; k++) {
+          index = getColorIndex(i, j, k);
+          count += this.histo[index] || 0;
+        }
+      }
+    }
+    this._count = count;
     return this._count;
   };
 
