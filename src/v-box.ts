@@ -1,4 +1,4 @@
-import { getColorIndex, Histo, Pixel, rshift, sigbits } from "./utils";
+import { getColorIndex, Histo, Pixel, rshift } from "./utils";
 
 export type VBoxRangeKey = "r1" | "r2" | "g1" | "g2" | "b1" | "b2";
 /**
