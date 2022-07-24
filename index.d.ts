@@ -10,15 +10,21 @@ declare class PQueue<T> extends Array<T> {
     sort: (comparator?: Comparator<T>) => this;
     push: (o: T) => number;
     pop: () => T;
+    /**
+     * 获取下标元素(默认获取最后一位元素)
+     * @param index
+     * @returns
+     */
     peek: (index?: number) => T;
     size: () => number;
     debug: () => this;
 }
 
 /**
- * rgb三维色彩空间 Box
- * 以 r,g,b 三色的取色范围定义 vbox 色彩空间大小
+ * rgb三维色彩空间 VBox
+ * 以 r,g,b 三色的取色范围(5位)定义 vbox 色彩空间大小
  * 即 x,y,z 三轴的上下限定义 空间大小
+ * hitso 一维数组保存像素记录(长度 5*5*5)
  */
 declare class VBox {
     r1: number;
@@ -41,7 +47,7 @@ declare class VBox {
      */
     volume: (force?: boolean) => number;
     /**
-     * 获取 histo 的总像素数（ histo可能有数个 vbox ）
+     * 获取 vbox 内的总像素数
      * @param force 强制重算
      * @returns
      */
@@ -52,7 +58,7 @@ declare class VBox {
      * @param force
      * @returns
      */
-    avg: (force?: boolean) => number[];
+    avg: (force?: boolean) => Pixel;
     /**
      * 像素是否在vbox色彩空间内
      * @param pixel
@@ -94,13 +100,13 @@ declare class CMap {
      * @param color
      * @returns
      */
-    map: (color: Pixel) => any;
+    map: (color: Pixel) => Pixel | undefined;
     /**
      * 获取当前颜色近似值
      * @param color
      * @returns
      */
-    nearest: (color: Pixel) => any;
+    nearest: (color: Pixel) => Pixel | undefined;
     /**
      * 当色彩空间接近极值时，直接取纯黑白色
      */
